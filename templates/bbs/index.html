@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>簡易掲示板</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+</head>
+<body>
+
+    <main class="container">
+        {# ここが投稿用フォーム #}
+        <form method="POST">
+            {% csrf_token %}
+            <textarea class="form-control" name="comment"></textarea>
+            <input type="submit" value="送信">
+        </form>
+
+        <div id="topic_area"></div>
+
+    </main>
+
+    <script>
+        // サーバーからのSSEストリームを受け取る
+        const eventSource = new EventSource("{% url 'bbs:topic_stream' %}");
+
+        // メッセージを受信した際の処理
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log(data.contents);
+
+            const area          = document.querySelector("#topic_area");
+            area.innerHTML  = "";
+
+            for ( topic of data.contents ){
+                const div = document.createElement("div");
+                div.textContent = `${topic.id} : ${topic.comment}`;
+                area.appendChild(div);
+            }
+        };
+
+        // エラー処理
+        eventSource.onerror = () => {
+            console.error("Error occurred while connecting to SSE stream.");
+        };
+    </script>
+
+
+</body>
+</html>
